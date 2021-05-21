@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p gr6
+#SBATCH -p gr3
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH -c 1
@@ -9,4 +9,4 @@
 # #SBATCH -o %x.o%J   # Standard output
 # #SBATCH -e %x.e%J   # Standard error
 
-python3 ./src/finite_kagome.py --D 20 --beta_end 1000.0 --dt 0.001 --instate HeisenD20 --Hx 0.50
+python3 ./src/finite_kagome.py --D 6 --beta_end 1000.0 --dt 0.001 --instate ising-D6-Hx0025 --Hx 0.025

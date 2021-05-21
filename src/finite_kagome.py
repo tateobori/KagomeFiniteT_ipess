@@ -483,10 +483,10 @@ if __name__=="__main__":
 
         for i in range(maxstepTEBD):
 
-            H, Ham = Hamiltonian_Heisen_In_Trian(J,Hz,spin)
-            H1, Ham1 = Hamiltonian_Heisen_In_Trian(J_up,Hz,spin)
-            #H, Ham = Hamiltonian_Ising_In_Trian(J,Hx,spin)
-            #H1, Ham1 = Hamiltonian_Ising_In_Trian(J,Hx,spin)
+            #H, Ham = Hamiltonian_Heisen_In_Trian(J,Hz,spin)
+            #H1, Ham1 = Hamiltonian_Heisen_In_Trian(J_up,Hz,spin)
+            H, Ham = Hamiltonian_Ising_In_Trian(J,Hx,spin)
+            H1, Ham1 = Hamiltonian_Ising_In_Trian(J,Hx,spin)
 
             U = expm(-0.5*dt*H).reshape(d_spin, d_spin,d_spin, d_spin, d_spin, d_spin)
             U1 = expm(-0.5*dt*H1).reshape(d_spin, d_spin,d_spin, d_spin, d_spin, d_spin)
