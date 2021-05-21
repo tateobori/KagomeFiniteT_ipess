@@ -297,12 +297,13 @@ def SimpleUpdate_up(B,C,A,R,lb,lc,la,U):
 
 ###########################################################################
 
-def Energy_Triangle(A,B,C,R, la_up, lb_up, lc_up, H, Ham):
+def Energy_Triangle_down(A,B,C,R, la_up, lb_up, lc_up, H, Ham):
 
     A = A*la_up[:,None,None,None] ; B = B*lb_up[:,None,None,None]; C = C*lc_up[:,None,None,None]
     H = H.reshape(d_spin, d_spin, d_spin, d_spin, d_spin, d_spin)
 
 
+    # ((A*Adag)*((R*(B*Bdag))*(Rdag*(C*Cdag))))
     tmp = np.transpose(
         np.tensordot(
             np.tensordot(
@@ -336,6 +337,47 @@ def Energy_Triangle(A,B,C,R, la_up, lb_up, lc_up, H, Ham):
 
 
     return np.real(E), np.real(E_AB), np.real(E_BC), np.real(E_CA)
+
+def Energy_Triangle_up(B,C,A,R, lb_low, lc_low, la_low, H, Ham):
+
+    B = B*lb_low[None,None,:,None] ; C = C*lc_low[None,None,:,None]; A = A*la_low[None,None,:,None]
+    H = H.reshape(d_spin, d_spin, d_spin, d_spin, d_spin, d_spin)
+
+
+    # ((B*B)*((R*(C*C))*(R*(A*A))))
+    tmp = np.transpose(
+        np.tensordot(
+            np.tensordot(
+                B, B, ([2, 3], [2, 3])
+            ), np.tensordot(
+                np.tensordot(
+                    R, np.tensordot(
+                        C, C, ([2, 3], [2, 3])
+                    ), ([1], [0])
+                ), np.tensordot(
+                    R, np.tensordot(
+                        A, A, ([2, 3], [2, 3])
+                    ), ([2], [2])
+                ), ([1, 3], [2, 1])
+            ), ([0, 2], [0, 3])
+        ), [0, 2, 4, 1, 3, 5]
+    )
+    
+    norm = np.einsum(tmp, (0, 1, 2, 0, 1, 2), ())
+
+    E_BC = np.einsum(tmp, (0, 1, 2, 3, 4, 2), (0, 1, 3, 4)) 
+    E_BC = np.tensordot(E_BC, Ham, ([0,1,2,3],[0,1,2,3]))/norm
+
+    E_CA = np.einsum(tmp, (0, 1, 2, 0, 3, 4), (1, 2, 3, 4))
+    E_CA = np.tensordot(E_CA, Ham, ([0,1,2,3],[0,1,2,3]))/norm
+
+    E_AB = np.einsum(tmp, (0, 1, 2, 3, 1, 4), (0, 2, 3, 4))
+    E_AB = np.tensordot(E_AB, Ham, ([0,1,2,3],[0,1,2,3]))/norm
+
+    E = np.tensordot(tmp.conj(), H, ([0,1,2,3,4,5],[0,1,2,3,4,5]))/norm
+
+
+    return np.real(E), np.real(E_BC), np.real(E_CA), np.real(E_AB)
 
 def Magnetization(A, la_up, la_low):
 
@@ -454,14 +496,16 @@ if __name__=="__main__":
             SimpleUpdate_down(A1,B1,C1,R1_low,l_A1_up,l_B1_up,l_C1_up,U)
                     
             B1, C1, A1, R1_up, l_B1_up, l_C1_up, l_A1_up = \
-            SimpleUpdate_up(B1,C1,A1,R1_up,l_B1_low,l_C1_low,l_A1_low,U)
+            SimpleUpdate_up(B1,C1,A1,R1_up,l_B1_low,l_C1_low,l_A1_low,U1)
 
-            E, E_AB, E_BC, E_CA = Energy_Triangle(A1, B1, C1, R1_low, l_A1_up, l_B1_up, l_C1_up, H, Ham)
+            E0, E0_AB, E0_BC, E0_CA = Energy_Triangle_down(A1, B1, C1, R1_low, l_A1_up, l_B1_up, l_C1_up, H, Ham)
+            E1, E1_BC, E1_CA, E1_AB = Energy_Triangle_up(B1, C1, A1, R1_up, l_B1_low, l_C1_low, l_A1_low, H1, Ham1)
 
             if 1.0/((i+1)*dt)<=3.0:
-                f.write("{0:.4e}, {1:.9e}\n".format((i+1)*dt, E*2/3.0))
+                f.write("{0:.4e}, {1:.9e}\n".format((i+1)*dt, (E0+E1)/3.0))
             if i%100 ==0:
-                print("{0:.2e}, {1:.9e}, {2:.9e}, {3:.9e}, {4:.9e}".format(i*dt, E_AB, E_BC, E_CA, E*2/3.0))
+                print("{0:.2e}, {1:.4e}, {2:.4e}, {3:.4e}, {4:.9e}".format(i*dt, E0_AB, E0_BC, E0_CA, (E0+E1)/3.0))
+                print("{0:.2e}, {1:.4e}, {2:.4e}, {3:.4e}, {4:.9e},\n".format(i*dt, E1_AB, E1_BC, E1_CA, (E0+E1)/3.0))
                 #print(l_A1_low)
                 #print(l_B1_low)
                 #print(l_C1_low,"\n")

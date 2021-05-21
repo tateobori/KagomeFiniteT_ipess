@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
 
 def LoadingData(filename):
@@ -19,29 +20,23 @@ def LoadingData(filename):
 
 if __name__=="__main__":
 
-    # obtain the arguments
-	T1, C1 = LoadingData("outputD3.txt")
-	T2, C2 = LoadingData("outputD4.txt")
-	T3, C3 = LoadingData("outputD10.txt")
-	T4, C4 = LoadingData("outputD20.txt")
-
+	parser = argparse.ArgumentParser(description='',allow_abbrev=False)
+	parser.add_argument("--file", default="output", help="Input DataSet File")
+	parser.add_argument("--xlim", type=float, default=0.80, help="xlim to show")
+	args = parser.parse_args()
+	file = args.file
+	T1, C1 = LoadingData(file)
 
 	fig = plt.figure()
-	c1,c2,c3,c4 = "blue","green","red","black"      # 各プロットの色
-	l1,l2,l3,l4 = "D3","D4","D10","D20"   # 各ラベル
-
 	plt.title("Specific Heat of Quantum Ising on Kagome Lattice")
 	plt.xlabel("T")
 	plt.ylabel("C")
-	plt.xlim(0,0.8)
+	plt.xlim(0, args.xlim)
 	plt.grid() 
 
-	plt.plot(T1, C1, color=c1, label=l1)
-	plt.plot(T2, C2, color=c2, label=l2)
-	plt.plot(T3, C3, color=c3, label=l3)
-	plt.plot(T4, C4, color=c4, label=l4)
+	plt.plot(T1, C1, color="black", label="D10")
 	plt.legend()
-	fig.savefig("ising.png")
+	fig.savefig("test.png")
 	plt.show()
 
 
