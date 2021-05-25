@@ -179,7 +179,7 @@ def initial_iPESS(d_spin):
 
     ## High temperature limit
     
-    A1 = np.zeros((1, d_spin, 1, d_spin))
+    A1 = np.zeros((1, d_spin**2, 1, d_spin**2))
     A1[0,0,0,0]=A1[0,1,0,1]=1.0
     B1 = C1 = A1
 
@@ -342,11 +342,10 @@ def SimpleUpdate_up(B,C,A,R,lb,lc,la,U):
 
 ###########################################################################
 
-def Energy_Triangle_down(A,B,C,R, la_up, lb_up, lc_up, H, Ham):
+def Energy_Triangle_down(A,B,C,R, la_up, lb_up, lc_up, H):
 
     A = A*la_up[:,None,None,None] ; B = B*lb_up[:,None,None,None]; C = C*lc_up[:,None,None,None]
-    H = H.reshape(d_spin, d_spin, d_spin, d_spin, d_spin, d_spin)
-
+    H = H.reshape(d_spin**2, d_spin**2, d_spin**2, d_spin**2, d_spin**2, d_spin**2)
 
     # ((A*Adag)*((R*(B*Bdag))*(Rdag*(C*Cdag))))
     tmp = np.transpose(
@@ -369,24 +368,15 @@ def Energy_Triangle_down(A,B,C,R, la_up, lb_up, lc_up, H, Ham):
     
     norm = np.einsum(tmp, (0, 1, 2, 0, 1, 2), ())
 
-    E_AB = np.einsum(tmp, (0, 1, 2, 3, 4, 2), (0, 1, 3, 4)) 
-    E_AB = np.tensordot(E_AB, Ham, ([0,1,2,3],[0,1,2,3]))/norm
-
-    E_BC = np.einsum(tmp, (0, 1, 2, 0, 3, 4), (1, 2, 3, 4))
-    E_BC = np.tensordot(E_BC, Ham, ([0,1,2,3],[0,1,2,3]))/norm
-
-    E_CA = np.einsum(tmp, (0, 1, 2, 3, 1, 4), (0, 2, 3, 4))
-    E_CA = np.tensordot(E_CA, Ham, ([0,1,2,3],[0,1,2,3]))/norm
-
     E = np.tensordot(tmp.conj(), H, ([0,1,2,3,4,5],[0,1,2,3,4,5]))/norm
 
 
-    return np.real(E), np.real(E_AB), np.real(E_BC), np.real(E_CA)
+    return np.real(E)
 
-def Energy_Triangle_up(B,C,A,R, lb_low, lc_low, la_low, H, Ham):
+def Energy_Triangle_up(B,C,A,R, lb_low, lc_low, la_low, H):
 
     B = B*lb_low[None,None,:,None] ; C = C*lc_low[None,None,:,None]; A = A*la_low[None,None,:,None]
-    H = H.reshape(d_spin, d_spin, d_spin, d_spin, d_spin, d_spin)
+    H = H.reshape(d_spin**2, d_spin**2, d_spin**2, d_spin**2, d_spin**2, d_spin**2)
 
 
     # ((B*B)*((R*(C*C))*(R*(A*A))))
@@ -410,19 +400,10 @@ def Energy_Triangle_up(B,C,A,R, lb_low, lc_low, la_low, H, Ham):
     
     norm = np.einsum(tmp, (0, 1, 2, 0, 1, 2), ())
 
-    E_BC = np.einsum(tmp, (0, 1, 2, 3, 4, 2), (0, 1, 3, 4)) 
-    E_BC = np.tensordot(E_BC, Ham, ([0,1,2,3],[0,1,2,3]))/norm
-
-    E_CA = np.einsum(tmp, (0, 1, 2, 0, 3, 4), (1, 2, 3, 4))
-    E_CA = np.tensordot(E_CA, Ham, ([0,1,2,3],[0,1,2,3]))/norm
-
-    E_AB = np.einsum(tmp, (0, 1, 2, 3, 1, 4), (0, 2, 3, 4))
-    E_AB = np.tensordot(E_AB, Ham, ([0,1,2,3],[0,1,2,3]))/norm
-
     E = np.tensordot(tmp.conj(), H, ([0,1,2,3,4,5],[0,1,2,3,4,5]))/norm
 
 
-    return np.real(E), np.real(E_BC), np.real(E_CA), np.real(E_AB)
+    return np.real(E)
 
 def Magnetization(A, la_up, la_low):
 
@@ -491,7 +472,7 @@ if __name__=="__main__":
     parser.add_argument("--eps_TEBD", type=float, default=1e-9, help="TEBD criterion for convergence")
     parser.add_argument("--instate", default="test", help="Input state JSON")
     parser.add_argument("--beta_end", type=float, default=4.00, help="final beta value to calculate")
-    parser.add_argument("--Hx", type=float, default=0.50, help="transverse field")
+    parser.add_argument("--Hx", type=float, default=0.00, help="transverse field")
 
     args = parser.parse_args()
 
@@ -514,6 +495,11 @@ if __name__=="__main__":
     # criterion for convergence
     eps_TEBD = 1e-9;  eps_CTM = 10**(-10)
 
+    J1_down= 0.092
+    J2_down= -0.765
+    J1_up = -0.273
+    J2_up = 0.113
+    J3 = -0.084
 
     # intiail iPESS
     A1, B1, C1,\
@@ -529,32 +515,30 @@ if __name__=="__main__":
 
         for i in range(maxstepTEBD):
 
-            #H, Ham = Hamiltonian_Heisen_In_Trian(J,Hz,spin)
-            #H1, Ham1 = Hamiltonian_Heisen_In_Trian(J_up,Hz,spin)
-            H, Ham = Hamiltonian_Ising_In_Trian(J,Hx,spin)
-            H1, Ham1 = Hamiltonian_Ising_In_Trian(J_up,Hx,spin)
+            H_down = Hamiltonian_Heisen_In_Double_Trian(J1_down, J2_down, J3, Hz,spin)
+            U_down = expm(-0.5*dt*H_down).reshape(d_spin**2, d_spin**2, d_spin**2, d_spin**2, d_spin**2, d_spin**2)
 
-            U = expm(-0.5*dt*H).reshape(d_spin, d_spin,d_spin, d_spin, d_spin, d_spin)
-            U1 = expm(-0.5*dt*H1).reshape(d_spin, d_spin,d_spin, d_spin, d_spin, d_spin)
+            H_up = Hamiltonian_Heisen_In_Double_Trian(J1_up, J2_up, J3, Hz,spin)
+            U_up = expm(-0.5*dt*H_up).reshape(d_spin**2, d_spin**2, d_spin**2, d_spin**2, d_spin**2, d_spin**2)
 
             
             A1, B1, C1, R1_low, l_A1_low, l_B1_low, l_C1_low = \
-            SimpleUpdate_down(A1,B1,C1,R1_low,l_A1_up,l_B1_up,l_C1_up,U)
+            SimpleUpdate_down(A1,B1,C1,R1_low,l_A1_up,l_B1_up,l_C1_up,U_down)
                     
             B1, C1, A1, R1_up, l_B1_up, l_C1_up, l_A1_up = \
-            SimpleUpdate_up(B1,C1,A1,R1_up,l_B1_low,l_C1_low,l_A1_low,U1)
+            SimpleUpdate_up(B1,C1,A1,R1_up,l_B1_low,l_C1_low,l_A1_low,U_up)
 
-            E0, E0_AB, E0_BC, E0_CA = Energy_Triangle_down(A1, B1, C1, R1_low, l_A1_up, l_B1_up, l_C1_up, H, Ham)
-            E1, E1_BC, E1_CA, E1_AB = Energy_Triangle_up(B1, C1, A1, R1_up, l_B1_low, l_C1_low, l_A1_low, H1, Ham1)
+            E0= Energy_Triangle_down(A1, B1, C1, R1_low, l_A1_up, l_B1_up, l_C1_up, H_down)
+            E1= Energy_Triangle_up(B1, C1, A1, R1_up, l_B1_low, l_C1_low, l_A1_low, H_up)
 
-            if 1.0/((i+1)*dt)<=3.0:
-                f.write("{0:.4e}, {1:.16e}\n".format((i+1)*dt, (E0+E1)/3.0))
+            if 1.0/((i+1)*dt)<=15.0:
+                f.write("{0:.4e}, {1:.16e}\n".format((i+1)*dt, (E0+E1)/6.0))
             if i%100 ==0:
-                print("{0:.2e}, {1:.4e}, {2:.4e}, {3:.4e}, {4:.9e}".format(i*dt, E0_AB, E0_BC, E0_CA, (E0+E1)/3.0))
-                print("{0:.2e}, {1:.4e}, {2:.4e}, {3:.4e}, {4:.9e},\n".format(i*dt, E1_AB, E1_BC, E1_CA, (E0+E1)/3.0))
-                #print(l_A1_low)
-                #print(l_B1_low)
-                #print(l_C1_low,"\n")
+                print("{0:.2e},{1:.9e},{2:.9e}, {3:.9e}".format(i*dt, E0, E1, (E0+E1)/6.0))
+                #print("{0:.2e}, {1:.4e}, {2:.4e}, {3:.4e}, {4:.9e},\n".format(i*dt, (E0+E1)/3.0))
+                print(l_A1_low)
+                print(l_B1_low)
+                print(l_C1_low,"\n")
 
             if i*dt>args.beta_end:
                 break 
