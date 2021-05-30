@@ -15,7 +15,7 @@ def LoadingData(filename):
 	# Calculate the specific heat from the Energy and beta
 	specific_heat = -beta*beta*np.diff(E, n=1)/0.001
 
-	return T, specific_heat
+	return T, specific_heat, specific_heat/T
 
 
 if __name__=="__main__":
@@ -32,12 +32,13 @@ if __name__=="__main__":
 	arg = sys.argv
 	del arg[0]
 	for file in sys.argv:
-		T1, C1 = LoadingData(file)
-		plt.plot(T1, C1, label=str(j))
+		T1, C1, C2 = LoadingData(file)
+		#plt.plot(T1, C1, label=str(file))
+		plt.plot(T1, C2, label=str(file))
 		j +=1
 
 	plt.legend()
-	fig.savefig("test.png")
+	fig.savefig("test1.png")
 	plt.show()
 
 
