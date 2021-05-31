@@ -9,4 +9,4 @@
 # #SBATCH -o %x.o%J   # Standard output
 # #SBATCH -e %x.e%J   # Standard error
 
-python3 ../src/finite-bilayer.py --D 6 --beta_end 100.0 --dt 0.001 --instate bilayerD6 --dt 0.001 
+python3 ../src/finite-bilayer.py --D 12 --beta_end 100.0 --dt 0.001 --instate bilayerD12 --dt 0.001 
